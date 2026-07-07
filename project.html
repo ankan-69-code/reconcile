@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic Memory | Immersive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #040406;
+            --card-bg: rgba(16, 16, 20, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #e2e2e8;
+            --text-muted: #8e8e9c;
+            --accent: #d4af37;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+            overflow-y: hidden; /* Locked initially */
+        }
+
+        /* Film Grain Overlay */
+        .film-grain {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        #particles {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- STAGE 1: GATEWAY --- */
+        #gateway {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #0c0c10 0%, #040406 85%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            transition: transform 1.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.8s cubic-bezier(0.16, 1, 0.3, 1), filter 1.8s ease;
+        }
+
+        .gate-wrapper {
+            text-align: center;
+            padding: 4.5rem 2.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(25px);
+            border-radius: 4px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9);
+            max-width: 480px; width: 90%;
+            animation: pulseSubtle 6s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseSubtle {
+            0% { box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 15px rgba(212, 175, 55, 0.05); }
+            100% { box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.15); }
+        }
+
+        .gate-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.6rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .gate-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .date-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.2rem;
+            text-align: center;
+            width: 180px; padding: 0.5rem;
+            outline: none;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .date-input:focus {
+            border-bottom-color: var(--accent);
+            width: 210px;
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.9rem 2.8rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-top: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(212, 175, 55, 0.05);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .error-msg {
+            color: #cf6679;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* --- STAGE 2: WORLD & REVEAL CLASSES --- */
+        #parallax-world {
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 2s ease 0.5s;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(60px) scale(0.96);
+            filter: blur(12px);
+            transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        filter 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform, filter;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0px);
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 8rem 2rem;
+        }
+
+        .parallax-bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .orb-1 {
+            width: 45vw; height: 45vw;
+            background: rgba(212, 175, 55, 0.06);
+            top: 5%; left: -10%;
+        }
+
+        .orb-2 {
+            width: 50vw; height: 50vw;
+            background: rgba(80, 100, 140, 0.04);
+            top: 45%; right: -15%;
+        }
+
+        /* LETTER SECTION STYLING */
+        .letter-container {
+            max-width: 780px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            padding: 5rem 4.5rem;
+            border-radius: 4px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+        }
+
+        .letter-date {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            color: var(--accent);
+            font-size: 1.4rem;
+            margin-bottom: 2.5rem;
+            display: block;
+        }
+
+        .letter-content {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            line-height: 1.9;
+            color: var(--text-main);
+        }
+
+        .letter-content p { 
+            margin-bottom: 1.8rem; 
+        }
+
+        .letter-quote {
+            font-style: italic;
+            font-size: 1.7rem;
+            color: #fff;
+            border-left: 2px solid var(--accent);
+            padding-left: 1.5rem;
+            margin: 2rem 0 2.5rem 0;
+        }
+
+        .shayari-block {
+            font-style: italic;
+            line-height: 2;
+            color: #d1d1db;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 1.8rem 2rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.04);
+            margin: 2.5rem 0;
+            text-align: center;
+        }
+
+        .birthday-wish {
+            font-size: 1.6rem;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-align: center;
+            margin-top: 3.5rem !important;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .signature {
+            font-style: italic;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 2rem !important;
+            margin-bottom: 0 !important;
+        }
+
+        /* --- CAPTURED FRAGMENTS & CLOSING SECTION --- */
+        .memories-section {
+            flex-direction: column;
+            padding: 10rem 2rem 6rem 2rem;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.2rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 6rem;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .parallax-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3.5rem;
+            max-width: 1180px;
+            width: 100%;
+            perspective: 1200px;
+        }
+
+        .photo-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .photo-tilt-box {
+            position: relative;
+            will-change: transform;
+        }
+
+        .photo-frame {
+            aspect-ratio: 4 / 5;
+            background: #111115;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.85);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: border-color 0.6s ease, box-shadow 0.6s ease, transform 0.15s ease-out;
+            cursor: pointer;
+        }
+
+        .glare {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 2;
+        }
+
+        .photo-frame:hover {
+            border-color: rgba(212, 175, 55, 0.65);
+            box-shadow: 0 35px 70px rgba(0,0,0,0.95), 0 0 30px rgba(212, 175, 55, 0.25);
+            z-index: 10;
+        }
+
+        .photo-frame:hover .glare { opacity: 1; }
+
+        .photo-frame img {
+            width: 100%; height: 125%;
+            object-fit: cover;
+            filter: grayscale(35%) contrast(115%) brightness(0.85);
+            transition: filter 0.8s ease;
+            object-position: center top;
+            will-change: transform;
+        }
+
+        .photo-frame:hover img {
+            filter: grayscale(0%) contrast(100%) brightness(1.05);
+        }
+
+        /* QUOTE SECTION */
+        .quote-section { 
+            min-height: 75vh; 
+            text-align: center; 
+            padding: 2rem 2rem 10rem 2rem; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .quote-box { 
+            max-width: 860px;
+            position: relative;
+            padding: 3rem;
+        }
+
+        .quote {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 2.6rem;
+            color: var(--text-main);
+            letter-spacing: 2px;
+            line-height: 1.6;
+            text-shadow: 0 4px 25px rgba(0,0,0,0.9);
+        }
+
+        /* Audio Equalizer */
+        .music-indicator {
+            position: fixed;
+            bottom: 25px; right: 25px;
+            z-index: 100;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.65rem; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--text-muted);
+            opacity: 0; transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        .sound-wave { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+        .bar { width: 2px; background-color: var(--accent); animation: bounceBar 0.8s infinite ease-in-out alternate; }
+        .bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+        .bar:nth-child(2) { height: 12px; animation-delay: 0.4s; }
+        .bar:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+        @keyframes bounceBar { 0% { height: 3px; } 100% { height: 12px; } }
+
+        @media (max-width: 850px) {
+            .parallax-grid { grid-template-columns: 1fr; gap: 4.5rem; max-width: 420px; }
+            .letter-container { padding: 3.5rem 2.2rem; }
+            .quote { font-size: 1.9rem; }
+            .section-title { font-size: 2.5rem; margin-bottom: 4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="song.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="music-indicator" id="musicIndicator">
+        <span>Playing</span>
+        <div class="sound-wave">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+    </div>
+
+    <div class="film-grain"></div>
+    <canvas id="particles"></canvas>
+
+    <!-- STAGE 1: GATEWAY -->
+    <div id="gateway">
+        <div class="gate-wrapper">
+            <h1 class="gate-title">The day everything ended</h1>
+            <div class="gate-subtitle">Enter date sequence</div>
+            <div class="input-group">
+                <input type="text" id="date-input" class="date-input" placeholder="DD/MM/YY" maxlength="8">
+            </div>
+            <button class="btn" onclick="verifyDate()">Unlock Memory</button>
+            <div id="error-msg" class="error-msg">Incorrect date sequence. Please enter 13/05/26.</div>
+        </div>
+    </div>
+
+    <!-- STAGE 2: PARALLAX WORLD -->
+    <div id="parallax-world">
+        <div class="parallax-bg-orb orb-1" data-speed="0.18"></div>
+        <div class="parallax-bg-orb orb-2" data-speed="-0.12"></div>
+
+        <!-- SECTION 1: CUSTOM LETTER -->
+        <section id="section-letter">
+            <div class="letter-container reveal">
+                <span class="letter-date">July 28, 2026</span>
+                
+                <div class="letter-content">
+                    <p class="letter-quote">"Leja mujhe sath tere, mujhko na rehna sath mere...❤️‍🩹"</p>
+                    
+                    <p>These will be the lines that will always come up to me when you are mentioned or brought up or even thought about. Its been 2 months 15 days... and there was not a single day where my heart was at peace.</p>
+                    
+                    <p>You were not only a girl that came in my life for few years, you were the person who carved her name in my heart for eternity.</p>
+                    
+                    <p>You met me when i was not a man, I was a boy that had a fucked up mindset and yk that better than anyone else how you managed to carve a man out of that boy. I did mistakes, many mistakes... i am very veryy sorry for every mistake i have done up to date. If you could forgive me then please....</p>
+                    
+                    <p>I can't think of any other person other than you and can never even think... you were the person whom i have imagined... fuck imagined, whom i have seen as my future.... i saw a future where only youu are that one person that can fill in.</p>
+                    
+                    <p>I may be a dumb one, i may be the one people call delusional... but... i will wait... i don't know how long but i will wait.... even if someday i see you with someone else, i will still believe in waiting...</p>
+                    
+                    <p>I never considered you as my girlfriend, you are the being that became sooo close to me that without you i am empty... i love youu till the day I die... if someday you consider to talk or you find any need of me... I AM PRESENT ALWAYS.</p>
+                    
+                    <div class="shayari-block">
+                        Tu subha ki wo kiran hai jiske bina meri duniya me ujala nhi hota,<br>
+                        Din ke har ek lamhe me sirf tera hi khyal rehta hai,<br>
+                        Agle Janam bhi agar mauka mile to tere sath fir bitana hai mujhe,<br>
+                        Pyaar ka mtlb ab mere liye sirf tumho...
+                    </div>
+                    
+                    <p>Probably this will be my last message... I am moving out of this state on 1st August, for Andhra Pradesh... just thought about letting you know.</p>
+                    
+                    <p class="birthday-wish">
+                        HAPPIEST BIRTHDAY TO THE SOUL OF MY BODY 🎁🎂❤️<br>
+                        <span style="font-size: 1.25rem; font-weight: 300; display: block; margin-top: 0.5rem; color: var(--text-main);">Stay healthy, prosper like a flower wishing you great success 🫂</span>
+                    </p>
+
+                    <p class="signature">Will be waiting till eternity.....</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: MEMORIES -->
+        <section class="memories-section">
+            <h2 class="section-title reveal">Captured Fragments</h2>
+            
+            <div class="parallax-grid">
+                <!-- Memory 1 -->
+                <div class="photo-wrapper reveal">
+                    <div class="photo-tilt-box" data-speed="-0.08">
+                        <div class="photo-frame">
+                            <div class="glare"></div>
+                            <img src="dg pic 1.jpeg" alt="Memory 1" class="parallax-inner-img" data-img-speed="0.05">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory 2 -->
+                <div class="photo-wrapper reveal" style="transition-delay: 0.2s;">
+                    <div class="photo-tilt-box" data-speed="0.06">
+                        <div class="photo-frame">
+                            <div class="glare"></div>
+                            <img src="dg pic 2.jpeg" alt="Memory 2" class="parallax-inner-img" data-img-speed="0.03">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory 3 -->
+                <div class="photo-wrapper reveal" style="transition-delay: 0.4s;">
+                    <div class="photo-tilt-box" data-speed="-0.12">
+                        <div class="photo-frame">
+                            <div class="glare"></div>
+                            <img src="dg pic 3.jpeg" alt="Memory 3" class="parallax-inner-img" data-img-speed="0.07">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: FINAL QUOTE -->
+        <section class="quote-section">
+            <div class="quote-box reveal">
+                <p class="quote">"I am going to keep them with me forever if it's the last memory I will have of you."</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        /* --- 1. Ambient Particle Engine --- */
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particlesArray = [];
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.8 + 0.3;
+                this.speedX = (Math.random() * 0.25 - 0.125);
+                this.speedY = (Math.random() * 0.25 - 0.125);
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(212, 175, 55, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 45; i++) particlesArray.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particlesArray.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+        /* --- 2. Gateway Verification & Optical Zoom Unlock --- */
+        const dateInput = document.getElementById('date-input');
+        dateInput.addEventListener('input', e => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 4) val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4, 6);
+            else if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+            e.target.value = val;
+        });
+
+        dateInput.addEventListener('keypress', e => { if (e.key === 'Enter') verifyDate(); });
+
+        function verifyDate() {
+            if (dateInput.value.trim() === '13/05/26') {
+                document.getElementById('error-msg').style.opacity = '0';
+                
+                // Play Audio
+                document.getElementById('bgMusic').play().then(() => {
+                    document.getElementById('musicIndicator').style.opacity = '1';
+                }).catch(e => console.log("Audio play blocked/missing:", e));
+
+                // Cinematic Optical Blur & Scale Transition
+                const gateway = document.getElementById('gateway');
+                gateway.style.transform = 'scale(1.25) translateY(-80px)';
+                gateway.style.filter = 'blur(20px)';
+                gateway.style.opacity = '0';
+                gateway.style.pointerEvents = 'none';
+
+                document.body.style.overflowY = 'auto';
+                document.getElementById('parallax-world').style.opacity = '1';
+                setTimeout(() => gateway.style.display = 'none', 1800);
+            } else {
+                document.getElementById('error-msg').style.opacity = '1';
+                dateInput.style.borderBottomColor = '#cf6679';
+                setTimeout(() => dateInput.style.borderBottomColor = 'var(--border-color)', 2000);
+            }
+        }
+
+        /* --- 3. IntersectionObserver (Blur-To-Focus Scroll Reveals) --- */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        /* --- 4. Smooth Momentum LERP Parallax Engine --- */
+        let currentScroll = 0;
+        let targetScroll = 0;
+        const ease = 0.07; 
+
+        window.addEventListener('scroll', () => { targetScroll = window.pageYOffset; });
+
+        const parallaxElements = document.querySelectorAll('[data-speed]');
+        const innerImages = document.querySelectorAll('.parallax-inner-img');
+
+        function smoothParallaxLoop() {
+            currentScroll += (targetScroll - currentScroll) * ease;
+
+            parallaxElements.forEach(el => {
+                const speed = parseFloat(el.getAttribute('data-speed'));
+                el.style.transform = `translate3d(0, ${-(currentScroll * speed)}px, 0)`;
+            });
+
+            innerImages.forEach(img => {
+                const speed = parseFloat(img.getAttribute('data-img-speed'));
+                img.style.transform = `translate3d(0, ${-(currentScroll * speed)}px, 0)`;
+            });
+
+            requestAnimationFrame(smoothParallaxLoop);
+        }
+        smoothParallaxLoop();
+
+        /* --- 5. Interactive 3D Card Tilt & Glare Tracking --- */
+        document.querySelectorAll('.photo-frame').forEach(card => {
+            const glare = card.querySelector('.glare');
+            
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -8;
+                const rotateY = ((x - centerX) / centerX) * 8;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
+                glare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 255, 255, 0.22) 0%, transparent 65%)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            });
+        });
+    </script>
+</body>
+</html>
